@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class Skittle : MonoBehaviour
 {
-	float xPosition;
+    float xPosition;
     float yPosition;
     float zPosition;
 
