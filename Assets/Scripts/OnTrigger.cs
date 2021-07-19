@@ -7,12 +7,22 @@ public class OnTrigger : MonoBehaviour
 {
     public TextMeshProUGUI canvas;
     public TextMeshProUGUI score;
+    public TextMeshProUGUI finalScore;
+    public Canvas endGameCanvas;
 
-    private int points;
-    private bool blockStike;
+    public GameObject rightController;
+    public GameObject leftController;
+
+    public GameObject rightHand;
+    public GameObject leftHand;
+
+
+    private float points;
+    private int tour;
+
+    private bool blockStrike;
     private bool reset;
     private bool delate;
-    public static bool set = false;
 
     public static bool state1;
     public static bool state2;
@@ -27,6 +37,7 @@ public class OnTrigger : MonoBehaviour
 
     public static int numberOfSkittleDown;
     public static bool skittlePositionned;
+    public static bool set = false;
 
     public Transform redSkittle;
     public Transform whiteSkittle;
@@ -34,21 +45,56 @@ public class OnTrigger : MonoBehaviour
     private bool firstThrow;
 	private bool secondThrow;
 
+    [SerializeField]
+    private TextMeshProUGUI[] bestScore = new TextMeshProUGUI[3];
+
+    [SerializeField]
+    private TextMeshProUGUI fallen;
+    
+    [SerializeField]
+    private TextMeshProUGUI titleTour;
 
     private void Start()
     {
-        points = 0;
+        GetPlayerScore();
+        rightController.SetActive(false);
+        leftController.SetActive(false);
+        endGameCanvas.gameObject.SetActive(false);
+        tour = 1;
+        points = 0.0f;
         firstThrow = false;
         secondThrow = false;
         numberOfSkittleDown = 0;
         canvas.text = "";
         score.text = "0";
+        finalScore.text = "";
         reset = false;
         delate = false;
         StartCoroutine(SetSkittleCoroutine(1.0f));
-        blockStike = false;
+        blockStrike = false;
+        fallen.text = "0";
+        titleTour.text = "";
+        classement.text = "";
     }
 	
+    private void GetPlayerScore()
+	{
+        for(int i = 1; i <= 3; i++)
+		{
+            float tmp = PlayerPrefs.GetFloat("bestScore" + i.ToString(), 0);
+            bestScore[i - 1].text = i + ". " + tmp.ToString();
+		}
+	}
+
+    private void DispSkittleFallen()//TODO OnTrigger: modifier affichage
+    {
+        fallen.text = numberOfSkittleDown.ToString();
+    }
+
+    private void DispTour()
+	{
+        titleTour.text = "Tour n° " + tour.ToString();
+	}
 
 	private void OnTriggerEnter(Collider other)
 	{
@@ -76,12 +122,14 @@ public class OnTrigger : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        DispTour();
+
         if (firstThrow == true && secondThrow == false /*&& numberOfSkittleDown == 10*/)
         {
             reset = false;
-            delate = false; 
-            canvas.text = "firstThrow: " + firstThrow.ToString() + "\nsecondThrow: " + secondThrow.ToString() + "\nSkittleDown: " + numberOfSkittleDown.ToString();
-            if (numberOfSkittleDown == 10 && blockStike == false)
+            delate = false;
+            canvas.text = "Tour n° " + tour.ToString();
+            if (numberOfSkittleDown == 10 && blockStrike == false)
             {
                 //strike
                 canvas.text = "strike";
@@ -95,7 +143,7 @@ public class OnTrigger : MonoBehaviour
             }
             else if(numberOfSkittleDown < 10)
 			{
-                blockStike = true;
+                blockStrike = true;
 
                 //on compte le quilles pour les points
 
@@ -103,8 +151,8 @@ public class OnTrigger : MonoBehaviour
         }
         else if (firstThrow == true && secondThrow == true )
         {
-            blockStike = false;
-            canvas.text = "firstThrow: " + firstThrow.ToString() + "\nsecondThrow: " + secondThrow.ToString() + "\nSkittleDown: " + numberOfSkittleDown.ToString();
+            blockStrike = false;
+            canvas.text = "Tour n° " + tour.ToString() ;
 
             if (numberOfSkittleDown == 10)
             {
@@ -127,12 +175,14 @@ public class OnTrigger : MonoBehaviour
                 StartCoroutine(ResetTourCoroutine(4.0f));
             ResetTour();
         }
-
+    
+        DispSkittleFallen();
     }
 
     private IEnumerator ResetTourCoroutine(float time)
     {
         yield return new WaitForSeconds(time);
+        canvas.text = "";
         SetSkittle();
     }
     private IEnumerator SetSkittleCoroutine(float time)
@@ -152,23 +202,29 @@ public class OnTrigger : MonoBehaviour
 
     private void CountPoint()
     {
-        int coeff;
+        float coeff;
         if (firstThrow == true && secondThrow == false)
-            coeff = 2;
+            coeff = 3.0f;
+        else if (firstThrow == true && secondThrow == true && numberOfSkittleDown == 10)
+            coeff = 1.5f;
         else
-            coeff = 1;
-        points += (numberOfSkittleDown * coeff);
+            coeff = 1.0f;
+        points += ((float)numberOfSkittleDown * coeff);
         score.text = points.ToString();
     }
 
     private void ResetTour()
     {
         CountPoint();
+        tour++;
         numberOfSkittleDown = 0;
         firstThrow = false;
         secondThrow = false;
         reset = true;
         delate = true;
+        fallen.text = "0";
+        if (tour == 11)
+            EndGame();
     }
 
     private void SetSkittle()
@@ -195,5 +251,47 @@ public class OnTrigger : MonoBehaviour
         Instantiate(whiteSkittle, new Vector3(-0.53f, 0.48f, -7.83f), Quaternion.identity);
         StartCoroutine(SetSkittleCoroutine(1.0f));
     }
+
+    private void SetPlayerScore()
+	{
+        for(int i = 1; i <= 3; i++)
+		{
+            if (PlayerPrefs.GetFloat("bestScore" + i.ToString(), 0) < points)
+			{
+                if(i == 1)
+				{//TODO: revoir ordre
+                    bestScore[2] = bestScore[1];
+                    bestScore[1] = bestScore[0];
+
+                    PlayerPrefs.SetFloat("bestScore3", PlayerPrefs.GetFloat("bestScore2", 0));
+                    PlayerPrefs.SetFloat("bestScore2", PlayerPrefs.GetFloat("bestScore1", 0));
+				}
+                else if (i == 2)
+				{
+                    bestScore[2] = bestScore[1];
+                    PlayerPrefs.SetFloat("bestScore3", PlayerPrefs.GetFloat("bestScore2", 0));
+                }
+                PlayerPrefs.SetFloat("bestScore" + i, points);
+                break;
+            }
+		}
+	}
+
+    private void EndGame()
+	{
+        SetPlayerScore();
+        GetPlayerScore();
+
+        endGameCanvas.gameObject.SetActive(true);
+        
+        rightHand.SetActive(false);
+        leftHand.SetActive(false);
+
+        rightController.SetActive(true);
+        leftController.SetActive(true);
+
+        finalScore.text = "Score : " + score.text;
+	}
+
 
 }

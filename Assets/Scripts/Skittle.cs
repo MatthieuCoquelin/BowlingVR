@@ -4,9 +4,11 @@ using UnityEngine;
 
 public class Skittle : MonoBehaviour
 {
-    float xPosition;
+	float xPosition;
     float yPosition;
     float zPosition;
+
+    //AudioSource skittleDownSound;
 
     public Transform redSkittle;
     public Transform whiteSkittle;
@@ -87,7 +89,8 @@ public class Skittle : MonoBehaviour
                 OnTrigger.state10 = false;
                 OnTrigger.numberOfSkittleDown++;
             }
-
+           /* skittleDownSound = gameObject.GetComponent<AudioSource>();
+            skittleDownSound.Play(0);*/
             Destroy(gameObject, 1.0f);
 		}
         
